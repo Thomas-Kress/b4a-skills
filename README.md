@@ -6,7 +6,6 @@ Claude Code skills for driving the b4A / best4Automic ReST API (Automic Automati
 
 | Skill | Description |
 |---|---|
-| [`run-b4a-api`](skills/run-b4a-api/SKILL.md) | Log in to and call the b4A ReST API against a running B4A instance (login, whoami, generic authenticated calls) via `driver.mjs`. |
 | [`b4a-login`](skills/b4a-login/SKILL.md) | Request shape for logging in to the b4A ReST API and reading the access token / expiration from the response. |
 | [`b4a-search`](skills/b4a-search/SKILL.md) | Search for Automic objects (jobs, folders, connections, etc.) via the `info.Search` module, including polling for status and report. |
 
