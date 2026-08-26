@@ -17,7 +17,7 @@ Each skill's `SKILL.md` documents its prerequisites, usage, gotchas, and trouble
 Install these skills into a project with the [`skills`](https://www.npmjs.com/package/skills) CLI:
 
 ```
-npx skills@latest add github:Thomas-Kress/b4a-skills
+npx skills@latest add https://github.com/Thomas-Kress/b4a-skills.git
 ```
 
 This copies the skills into your project's `.claude/skills/` directory so Claude Code can discover and use them.
