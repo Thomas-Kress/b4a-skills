@@ -31,7 +31,12 @@ This copies the skills into your project's `.claude/skills/` directory so Claude
   B4A_REST_API_URL=http://localhost:9081
   B4A_REST_API_USERNAME=USER/DEPARTMENT
   B4A_REST_API_PASSWORD=...
-  B4A_DEFAULT_CONNECTION=...          # optional, used by search when no connection is given
+  B4A_DEFAULT_CONNECTION=connection
   ```
 
-  No trailing slash on the URL.
+  | Variable | Required | Use |
+  |---|---|---|
+  | `B4A_REST_API_URL` | yes | Base URL of the b4A ReST API. No trailing slash. |
+  | `B4A_REST_API_USERNAME` | yes | Login user in `USER/DEPARTMENT` form. |
+  | `B4A_REST_API_PASSWORD` | yes | Login password. Often Automic-encrypted (starts with `--`); pass it through unmodified. |
+  | `B4A_DEFAULT_CONNECTION` | unless a connection is named in the request | Default Automic connection for `/module` jobs (including search) when the user does not pass one. |
