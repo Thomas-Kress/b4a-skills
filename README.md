@@ -1,6 +1,12 @@
 # b4a-skills
 
-Claude Code skills for driving the b4A / best4Automic ReST API (Automic Automation).
+AI agent skills for driving the b4A / best4Automic ReST API (Automic Automation).
+
+These skills can be used by any AI coding agent that supports the skills format:
+
+- **Claude Code** — skills are discovered automatically from `.claude/skills/` in your project.
+- **Cursor (Agent mode)** — install the skills into your project and they become available to Cursor's AI agent for interactive chat, background agents, and cloud agents alike.
+- **Other AI agents** — any tool that reads skill files (`SKILL.md`) can leverage these instructions to authenticate, run modules, and search objects against a b4A instance.
 
 ## Skills
 
