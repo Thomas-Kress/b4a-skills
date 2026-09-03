@@ -9,7 +9,7 @@ Claude Code skills for driving the b4A / best4Automic ReST API (Automic Automati
 | [`b4a-login`](skills/b4a-login/SKILL.md) | Request shape for logging in to the b4A ReST API and reading the access token / expiration from the response. |
 | [`b4a-search`](skills/b4a-search/SKILL.md) | Search for Automic objects (jobs, folders, connections, etc.) via the `info.Search` module, including polling for status and report. |
 
-Each skill's `SKILL.md` documents its prerequisites, usage, gotchas, and troubleshooting in detail.
+Each skill's `SKILL.md` documents its prerequisites, usage, gotchas, and troubleshooting in detail. Obtain a token with `b4a-login` before calling `b4a-search`.
 
 ## Installation
 
@@ -23,14 +23,14 @@ This copies the skills into your project's `.claude/skills/` directory so Claude
 
 ## Prerequisites
 
-- Node.js 18+ (built-in `fetch` support).
-- A reachable B4A / best4Automic instance and a `.env` file at your project root:
+- A reachable B4A / best4Automic instance
+- A `.env` file at your project root:
 
   ```
   B4A_REST_API_URL=http://localhost:9081
   B4A_REST_API_USERNAME=USER/DEPARTMENT
   B4A_REST_API_PASSWORD=...
-  B4A_DEFAULT_CONNECTION=...          # optional, used by `search` when no connection arg is given
+  B4A_DEFAULT_CONNECTION=...          # optional, used by search when no connection is given
   ```
 
   No trailing slash on the URL.

@@ -1,101 +1,134 @@
 ---
 name: b4a-search
-description: Search for Automic objects (jobs, folders, connections, etc.) via the b4A / best4Automic ReST API's info.Search module. Use when the user wants to search for, find, or list objects in Automic through b4A. Requires a valid auth token — obtained automatically here, or see the b4a-login skill for the raw request/response shape.
+description: Search for Automic objects (jobs, folders, connections, etc.) via the b4A / best4Automic ReST API's info.Search module. Use when the user wants to search for, find, or list objects in Automic through b4A. Requires a valid auth token from the b4a-login skill.
 ---
 
 # b4A Object Search
 
-POST `/module` with an `info.Search` job, then poll the returned links for
-status and the report. This reuses the login/session/call machinery already
-built for `run-b4a-api` — no separate driver script. All paths below are
-relative to the repo root; run everything with `MSYS_NO_PATHCONV=1` on
-Windows/Git Bash (see [run-b4a-api](../run-b4a-api/SKILL.md) Gotchas).
+POST `/module` with an `info.Search` job, poll until it completes, then fetch the report. Get a bearer token first with [b4a-login](../b4a-login/SKILL.md).
+
+Always use the **full URL** (`$B4A_REST_API_URL` + path). Nested paths like `/module/254` break if Git Bash rewrites a leading slash.
 
 ## Prerequisites
 
-Same `.env` as [run-b4a-api](../run-b4a-api/SKILL.md):
+- A valid bearer token from [b4a-login](../b4a-login/SKILL.md)
+- `.env` at the project root:
 
 ```
 B4A_REST_API_URL=http://localhost:9081
 B4A_REST_API_USERNAME=USER/DEPARTMENT
 B4A_REST_API_PASSWORD=...
-B4A_DEFAULT_CONNECTION=AE24-0010    # used when no connection is passed explicitly
+B4A_DEFAULT_CONNECTION=connection    # used when no connection is given
 ```
 
-## Run (agent path)
+No trailing slash on the URL. `B4A_DEFAULT_CONNECTION` is required unless the user names a connection explicitly.
 
-```
-MSYS_NO_PATHCONV=1 node .claude/skills/run-b4a-api/driver.mjs search                # uses B4A_DEFAULT_CONNECTION
-MSYS_NO_PATHCONV=1 node .claude/skills/run-b4a-api/driver.mjs search AE24-0010      # explicit connection
-```
+## Flow
 
-`search` logs in automatically if there's no valid cached token (same
-session cache as `run-b4a-api`), then POSTs
-`{"name":"info.Search","options":{"connection":"<connection>"}}` to
-`/module`. The server accepts the job asynchronously (`HTTP 202`,
-`status: "INITIATED"`) and returns `_links.get_module` /
-`_links.get_report` to poll.
+1. Login and keep the bearer token (see [b4a-login](../b4a-login/SKILL.md)).
+2. Start the search.
+3. Poll `get_module` until `status` is no longer `INITIATED`.
+4. Fetch `get_report`.
 
-Verified output (real instance, id/timestamps differ per run):
+### 1. Start search
 
-```
-$ node .claude/skills/run-b4a-api/driver.mjs search
-HTTP 202
-{"id":254,"updated":"2026-08-26T07:57:13.468+00:00","name":"info.Search","status":"INITIATED",...,
- "_links":{"get_module":{"href":"http://localhost:9081/module/254"},"get_report":{"href":"http://localhost:9081/module/254/report"}}}
+`POST {B4A_REST_API_URL}/module`
 
-Follow up: node driver.mjs call GET //module/254 (or //module/254/report)
-```
+```http
+POST /module
+Authorization: Bearer <token>
+Content-Type: application/json
 
-Poll `get_module` until `status` is no longer `INITIATED`, then fetch
-`get_report` for the results. Both links carry only the path — reuse
-`run-b4a-api`'s `call` command with `MSYS_NO_PATHCONV=1` and a **single**
-leading slash (the double-slash shortcut used elsewhere in this repo breaks
-on nested paths — see Gotchas):
-
-```
-$ MSYS_NO_PATHCONV=1 node .claude/skills/run-b4a-api/driver.mjs call GET /module/254
-HTTP 200
-{"id":254,"status":"COMPLETED","returnCode":0,"errorMessage":"",...,
- "_links":{"get_report":{"href":"http://localhost:9081/module/254/report"},"delete_module":{"href":"http://localhost:9081/module/254/cleanup"}}}
-
-$ MSYS_NO_PATHCONV=1 node .claude/skills/run-b4a-api/driver.mjs call GET /module/254/report
-HTTP 200
+{
+  "name": "info.Search",
+  "options": {
+    "connection": "<connection>"
+  }
+}
 ```
 
-Full flow (search → INITIATED → poll → COMPLETED → report) was run
-end-to-end against a live instance in this session.
+```bash
+curl -sS -X POST "$B4A_REST_API_URL/module" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"info.Search\",\"options\":{\"connection\":\"$B4A_DEFAULT_CONNECTION\"}}"
+```
 
-## Run (human path)
+Expected: HTTP 202, `status: "INITIATED"`, plus `_links.get_module` and `_links.get_report`.
 
-None — headless ReST API.
+Verified shape (id/timestamps differ per run):
+
+```json
+{
+  "id": 254,
+  "name": "info.Search",
+  "status": "INITIATED",
+  "_links": {
+    "get_module": { "href": "http://localhost:9081/module/254" },
+    "get_report": { "href": "http://localhost:9081/module/254/report" }
+  }
+}
+```
+
+Optional the search can be more specific by adding the name filter. if required the name filter is added to options item like shown in the example below. The name filter can have normal wildcards like the question mark (?) for exactly one character or the asterix (*) for multiple characters (as normally used). The name filter is optional and used only when requested
+
+{
+  "name": "info.Search",
+  "options": {
+    "connection": "connection",
+    "name": "name filter"
+  }
+}
+
+Other options also be possible but not discribed for the moment, so do not use them.
+
+### 2. Poll status
+
+GET `_links.get_module.href` with the same bearer token until `status` is no longer `INITIATED` (typically `COMPLETED`). Sleep briefly between polls.
+
+```bash
+curl -sS "$B4A_REST_API_URL/module/254" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+When complete:
+
+```json
+{
+  "id": 254,
+  "status": "COMPLETED",
+  "returnCode": 0,
+  "errorMessage": "",
+  "_links": {
+    "get_report": { "href": "http://localhost:9081/module/254/report" },
+    "delete_module": { "href": "http://localhost:9081/module/254/cleanup" }
+  }
+}
+```
+
+Inspect `returnCode` / `errorMessage` before treating the job as successful.
+
+### 3. Fetch report
+
+GET `_links.get_report.href` with the same bearer token.
+
+```bash
+curl -sS "$B4A_REST_API_URL/module/254/report" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The report body can be empty (`HTTP 200`, empty text) right after `status` flips to `COMPLETED`. Re-fetch shortly after; do not treat an empty report as a failed search.
 
 ## Gotchas
 
-- **The double-slash MSYS workaround (`//module/254`) fails here** with
-  `HTTP 400 Ambiguous URI empty segment` from the server (Jetty), even
-  though it works for single-segment paths like `/version`. Use
-  `MSYS_NO_PATHCONV=1` with a single slash for anything under `/module/...`.
-- **The report body can come back empty** (`HTTP 200`, empty text) right
-  after `status` flips to `COMPLETED` — observed on a real search that
-  matched objects. Don't treat an empty report as a driver bug; if you need
-  the actual content, re-check shortly after or inspect `get_module`'s
-  `returnCode`/`errorMessage` first.
-- **The server's own default `types` list is much broader** than any
-  example you might have seen — a bare `info.Search` (no `types` in
-  `options`) searched everywhere Automic-object-shaped (`JOBS`, `JOBP`,
-  `FOLD`, `CONN`, `USER`, ... 40+ types), not just a couple. If you need a
-  narrower search, add `types: [...]` to `options` in a `call POST /module`
-  invocation directly — `search` here only sends `connection`.
-- **`/module` requires the same bearer token as everything else** — a 401
-  here almost always means the cached session expired or was never
-  established; `search` re-logs-in automatically, so a 401 more likely
-  means bad credentials in `.env` (see run-b4a-api Troubleshooting).
+- **`/module` requires the same bearer token as everything else.** HTTP 401 here almost always means the token expired or login never succeeded — re-run [b4a-login](../b4a-login/SKILL.md). If login also 401s, credentials in `.env` are wrong or expired.
+- **Do not use a double-slash path** (`//module/254`). Jetty rejects nested paths with `400 Ambiguous URI empty segment`. Use the full URL from `_links` or `$B4A_REST_API_URL/module/<id>`.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| `No connection given and B4A_DEFAULT_CONNECTION not set in .env` | Pass a connection explicitly: `search <CONNECTION>`, or add `B4A_DEFAULT_CONNECTION=...` to `.env`. |
-| `HTTP 400 Ambiguous URI empty segment` when polling `get_module`/`get_report` | You used the `//` double-slash trick on a nested path — switch to `MSYS_NO_PATHCONV=1` with a single slash. |
-| `search` returns `HTTP 401` | Credentials in `.env` are wrong/expired — see [run-b4a-api](../run-b4a-api/SKILL.md) Troubleshooting. |
+| No connection available | Pass a connection explicitly, or set `B4A_DEFAULT_CONNECTION` in `.env`. |
+| `HTTP 400 Ambiguous URI empty segment` | The path was rewritten to `//module/...` — call the full URL with a single slash. |
+| `HTTP 401` on `/module` | Token missing/expired, or credentials in `.env` are wrong — see [b4a-login](../b4a-login/SKILL.md). |
+| Report is empty after `COMPLETED` | Re-fetch `get_report` after a short wait; check `returnCode` / `errorMessage` on `get_module`. |
