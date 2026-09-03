@@ -7,9 +7,10 @@ Claude Code skills for driving the b4A / best4Automic ReST API (Automic Automati
 | Skill | Description |
 |---|---|
 | [`b4a-login`](skills/b4a-login/SKILL.md) | Request shape for logging in to the b4A ReST API and reading the access token / expiration from the response. |
-| [`b4a-search`](skills/b4a-search/SKILL.md) | Search for Automic objects (jobs, folders, connections, etc.) via the `info.Search` module, including polling for status and report. |
+| [`b4a-module`](skills/b4a-module/SKILL.md) | Shared `/module` lifecycle: start a job, poll status, fetch the report. |
+| [`b4a-search`](skills/b4a-search/SKILL.md) | Search for Automic objects (jobs, folders, connections, etc.) via the `info.Search` module payload. |
 
-Each skill's `SKILL.md` documents its prerequisites, usage, gotchas, and troubleshooting in detail. Obtain a token with `b4a-login` before calling `b4a-search`.
+Each skill's `SKILL.md` documents its prerequisites, usage, gotchas, and troubleshooting in detail. Obtain a token with `b4a-login`, run jobs with `b4a-module`, and use `b4a-search` for the `info.Search` payload.
 
 ## Installation
 
